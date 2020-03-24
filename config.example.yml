@@ -32,6 +32,6 @@ topics:
           - request:
               method: POST
               url: "https://my_callback.com/"
-              data: "{{ value['button'] }}"
+              post_data: "{{ value['button'] }}"
 
 
