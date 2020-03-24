@@ -21,10 +21,7 @@ class TopicHandler:
         self.jinja: Optional[jinja2.Template] = None
 
         if "jq_query" in topic_cfg:
-            if not topic_cfg.get('load_json', True):
-                raise ValueError("load_json can't be False when using jq")
             self.jq = pyjq.compile(topic_cfg["jq_query"])
-            self.load_json = True
 
         if "jinja_query" in topic_cfg:
             self.jinja = jinja2.Template(topic_cfg['jinja_query'])
@@ -34,7 +31,7 @@ class TopicHandler:
 
     async def handle(self, client: mqtt.Client, topic: str, payload: bytes, qos: int, properties):
         payload = payload.decode(errors="replace")
-        value = None
+        value = payload
         if self.load_json:
             value = json.loads(payload)
 
