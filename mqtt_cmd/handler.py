@@ -76,8 +76,13 @@ async def handle_request(handler_cfg: dict, *a, **kw):
         for k, v in headers.items():
             headers[k] = Template(v).render(**kw)
 
+    url = Template(url).render(**kw)
+
     async with aiohttp.ClientSession(timeout=timeout) as session:
-        await session.request(method, Template(url).render(**kw), data=data, headers=headers)
+        try:
+            await session.request(method, url, data=data, headers=headers)
+        except Exception:
+            raise RuntimeError(f"Error while performing {method} request to '{url}'")
 
 
 async def handle_command(handler_cfg: dict, *a, **kw):
@@ -124,4 +129,7 @@ async def handle_template(handler_cfg: dict, templates_cfg: dict, *a, **kw):
     if not handler:
         raise ValueError(f'Handler "{handler_name}" does not exist')
 
-    await handler(cfg, *a, **extra_vars)
+    try:
+        await handler(handler_cfg=cfg, *a, **extra_vars)
+    except Exception:
+        raise RuntimeError(f"Error while running template action '{tpl_name}'")
