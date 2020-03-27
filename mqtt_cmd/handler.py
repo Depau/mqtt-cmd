@@ -69,6 +69,8 @@ async def handle_request(handler_cfg: dict, *a, **kw):
     headers = handler_cfg.get('headers', None)
     timeout = aiohttp.ClientTimeout(total=handler_cfg.get('timeout', 60))
 
+    method = Template(method).render(**kw)
+
     if data:
         data = Template(data).render(**kw)
 
