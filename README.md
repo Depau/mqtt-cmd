@@ -143,8 +143,8 @@ Performs an HTTP request to a remote server (asynchronously).
 Basic templates for actions may be provided (i.e. in order to avoid
 typing all over the config the same api key).
 
-Templates may define any of the above described actions, but they can
-accept any additional Jinja2 template variables.
+Templates may be defined on top of any action (including `template`),
+but they can accept any additional Jinja2 template variables.
 
 To define templates, add in the config root:
 
