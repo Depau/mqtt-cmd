@@ -29,6 +29,7 @@ class MQTTConnectionHandler:
         self._client = mqtt.Client(client_id=self._cfg["mqtt"].get("client_id", "mqtt-cmd"))
         self._client.on_connect = self.on_connect
         self._client.on_message = self.on_message
+        self._client.on_disconnect = self.on_disconnect
         await self._client.connect(self._cfg["mqtt"]["host"], self._cfg["mqtt"].get("port", 1883), keepalive=60)
         logging.debug(f"Connected to broker {self._cfg['mqtt']['host']}")
 
