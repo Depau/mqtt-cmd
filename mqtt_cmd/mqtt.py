@@ -24,12 +24,10 @@ class MQTTConnectionHandler:
         self._cfg = cfg
         self._client: Optional[mqtt.Client] = None
         self._topic_handlers: MutableMapping[str, List[TopicHandler]] = {}
-        self._handlers_set_up = False
 
     async def connect(self):
         self._client = mqtt.Client(client_id=self._cfg["mqtt"].get("client_id", "mqtt-cmd"))
         self._client.on_connect = self.on_connect
-        self._client.on_disconnect = self.on_disconnect
         self._client.on_message = self.on_message
         await self._client.connect(self._cfg["mqtt"]["host"], self._cfg["mqtt"].get("port", 1883), keepalive=60)
         logging.debug(f"Connected to broker {self._cfg['mqtt']['host']}")
@@ -40,9 +38,6 @@ class MQTTConnectionHandler:
         await self._client.disconnect()
 
     def on_connect(self, client: mqtt.Client, userdata, flags, rc):
-        logging.info("Connected to broker")
-        if self._handlers_set_up:
-            return
         for topic in self._cfg["topics"]:
             name, cfg = next(iter(topic.items()))
 
@@ -51,12 +46,6 @@ class MQTTConnectionHandler:
 
             self._topic_handlers[name].append(TopicHandler(cfg, self._cfg.get('templates', None)))
             self._client.subscribe(name)
-        
-        self._handlers_set_up = True
-
-    @staticmethod
-    def on_disconnect(client: mqtt.Client, packet, exc=None):
-        logging.info("Disconnected from broker")
 
     async def on_message(self, client: mqtt.Client, topic: str, payload: bytes, qos: int, properties):
         logging.info(f"message from {topic}, {payload}")
