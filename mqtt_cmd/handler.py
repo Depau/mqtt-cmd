@@ -144,7 +144,12 @@ async def handle_template(handler_cfg: dict, templates_cfg: dict, logger: loggin
     if not handler:
         raise ValueError(f'Handler "{handler_name}" does not exist')
 
+    # Also add extra vars to cfg since we might be defining action variables in the template
+    cfg.update(extra_vars)
+
+    logger.debug(f"-> template: {tpl_name}, running {handler_name}")
+
     try:
-        await handler(handler_cfg=cfg, *a, **extra_vars)
+        await handler(handler_cfg=cfg, templates_cfg=templates_cfg, logger=logger, *a, **extra_vars)
     except Exception:
         raise RuntimeError(f"Error while running template action '{tpl_name}'")
