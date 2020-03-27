@@ -15,8 +15,8 @@ def mqtt_topic_matches(topic, pattern):
     else:
         head, tail = pattern.split('+', 1)
         return topic.startswith(head) \
-            and topic.endswith(tail) \
-            and '/' not in topic.replace(head, '').replace(tail, '')
+               and topic.endswith(tail) \
+               and '/' not in topic.replace(head, '').replace(tail, '')
 
 
 class MQTTConnectionHandler:
@@ -44,7 +44,7 @@ class MQTTConnectionHandler:
             if name not in self._topic_handlers:
                 self._topic_handlers[name] = []
 
-            self._topic_handlers[name].append(TopicHandler(cfg))
+            self._topic_handlers[name].append(TopicHandler(cfg, self._cfg.get('templates', None)))
             self._client.subscribe(name)
 
     async def on_message(self, client: mqtt.Client, topic: str, payload: bytes, qos: int, properties):

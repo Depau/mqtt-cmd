@@ -3,6 +3,13 @@ mqtt:
   port: 1883                 # default 1883
   client_id: "mqtt-cmd"      # default "mqtt-cmd"
 
+templates:
+  prepared_command:
+    command:
+      shell: true
+      args: 'echo hello world {{ extra_args | default("") }}'
+
+
 topics:
   - 'my/topic':
       load_json: true        # default false
@@ -29,9 +36,8 @@ topics:
               shell: true
               args: 'swaymsg fullscreen toggle'
 
-          - request:
-              method: POST
-              url: "https://my_callback.com/"
-              post_data: "{{ value['button'] }}"
+          - template:
+              name: prepared_command
+              extra_args: "lol"
 
 

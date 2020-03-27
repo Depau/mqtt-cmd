@@ -14,8 +14,9 @@ from jinja2 import Template
 
 class TopicHandler:
     # noinspection PyProtectedMember
-    def __init__(self, topic_cfg: dict):
+    def __init__(self, topic_cfg: dict, templates_cfg: dict):
         self.topic_cfg = topic_cfg
+        self.templates_cfg = templates_cfg
         self.load_json = topic_cfg.get('load_json', False)
         self.jq: Optional[pyjq._pyjq.Script] = None
         self.jinja: Optional[jinja2.Template] = None
@@ -54,7 +55,8 @@ class TopicHandler:
                     if not handler:
                         raise ValueError(f'Handler "{handler_name}" does not exist')
 
-                    await handler(cfg, mqtt=client, topic=topic, payload=payload, qos=qos, properties=properties,
+                    await handler(handler_cfg=cfg, templates_cfg=self.templates_cfg, mqtt=client, topic=topic,
+                                  payload=payload, qos=qos, properties=properties,
                                   value=value)
                 except Exception:
                     logging.warning(f"Error executing handler '{handler_name}':", exc_info=sys.exc_info())
@@ -101,3 +103,25 @@ async def handle_command(handler_cfg: dict, *a, **kw):
     p = await process_creator(stdin=asyncio.subprocess.PIPE if stdin else None)
 
     await asyncio.wait_for(p.communicate(stdin), timeout)
+
+
+async def handle_template(handler_cfg: dict, templates_cfg: dict, *a, **kw):
+    tpl_name = handler_cfg["name"]
+
+    if tpl_name not in templates_cfg:
+        raise ValueError(f"Template '{tpl_name}' does not exist")
+
+    extra_vars = handler_cfg.copy()
+    # Do not leak template name into extra vars
+    del extra_vars["name"]
+
+    # kwargs are copied into extra_vars (and not the other way around) so internal data can't be overwritten
+    extra_vars.update(kw)
+
+    handler_name, cfg = next(iter(templates_cfg[tpl_name].items()))
+
+    handler = globals().get(f'handle_{handler_name}', None)
+    if not handler:
+        raise ValueError(f'Handler "{handler_name}" does not exist')
+
+    await handler(cfg, *a, **extra_vars)

@@ -37,6 +37,11 @@ mqtt:
   port: 1883                 # default 1883
   client_id: "mqtt-cmd"      # default "mqtt-cmd"
 
+templates:
+  template_name:
+    action_name:
+      prepared: "params"
+
 topics:
   ## List of topics
   - 'subscription/topic/with/wildcard/#':
@@ -105,7 +110,7 @@ Available template variables are described later in
 
 ## Actions
 
-Two actions are available for use. All strings inside are parsed as Jinja2
+Thre actions are available for use. All strings inside are parsed as Jinja2
 templates, with variables described in 
 [Jinja2 template variables](#jinja2-template-variables).
 
@@ -133,6 +138,46 @@ Performs an HTTP request to a remote server (asynchronously).
 - `post_data`: optional - Any raw post data to be sent to the server
 - `headers`: optional - A dict of strings to be used for HTTP headers
 
+### Template actions
+
+Basic templates for actions may be provided (i.e. in order to avoid
+typing all over the config the same api key).
+
+Templates may define any of the above described actions, but they can
+accept any additional Jinja2 template variables.
+
+To define templates, add in the config root:
+
+```yaml
+templates:
+  my_tpl_name:
+    action_name:
+      action_parameters: null
+
+  # For example
+  api_request:
+    request:
+      url: "https://api.example.com{{ location }}"
+      headers:
+        X-API-Key: "deadbeef" 
+```
+
+To use template, use, as action:
+
+```yaml
+template:
+  name: api_request
+  method: GET
+  location: /
+```
+
+Note that template variables that override internal variables such as
+`topic`, `value`, `payload` are discarded.
+
+To-do:
+- Extend Jinja2 variable parsing so that Jinja2 non-string objects are
+  used as such, allowing one to generate `args` and `headers` based on
+  template action arguments in the template definition.
 
 ## Jinja2 template variables
 
@@ -145,7 +190,6 @@ The following variables are available in all Jinja2 templates:
    payload. If `false`, it's the same as `payload`
 - `qos: int` - The message's QoS value
 - `properties: dict` - Message properties as provided by `gmqtt`
-
 
 # License
 
