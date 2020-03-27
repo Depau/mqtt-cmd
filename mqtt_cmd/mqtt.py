@@ -38,6 +38,7 @@ class MQTTConnectionHandler:
         await self._client.disconnect()
 
     def on_connect(self, client: mqtt.Client, userdata, flags, rc):
+        logging.info("Connected to broker")
         for topic in self._cfg["topics"]:
             name, cfg = next(iter(topic.items()))
 
@@ -46,6 +47,10 @@ class MQTTConnectionHandler:
 
             self._topic_handlers[name].append(TopicHandler(cfg, self._cfg.get('templates', None)))
             self._client.subscribe(name)
+
+    def on_disconnect(self, client: mqtt.Client, packet, exc=None):
+        logging.info("Disconnected from broker")
+        self._topic_handlers = {}
 
     async def on_message(self, client: mqtt.Client, topic: str, payload: bytes, qos: int, properties):
         logging.info(f"message from {topic}, {payload}")
