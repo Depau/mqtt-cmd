@@ -12,7 +12,7 @@ setup(
     install_requires=['gmqtt', 'pyyaml', 'pyjq', 'aiohttp[speedups]', 'six', 'jinja2'],
     entry_points={
         "console_scripts": [
-            "mqtt_cmd = mqtt_cmd:main.main"
+            "mqtt_cmd = mqtt_cmd.main:main"
         ]
     }
 )
