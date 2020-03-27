@@ -48,6 +48,7 @@ class MQTTConnectionHandler:
             self._client.subscribe(name)
 
     async def on_message(self, client: mqtt.Client, topic: str, payload: bytes, qos: int, properties):
+        logging.info(f"message from {topic}, {payload}")
         for handler_topic, handlers in self._topic_handlers.items():
             if mqtt_topic_matches(topic, handler_topic):
                 for handler in handlers:

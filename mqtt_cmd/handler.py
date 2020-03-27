@@ -20,6 +20,8 @@ class TopicHandler:
         self.load_json = topic_cfg.get('load_json', False)
         self.jq: Optional[pyjq._pyjq.Script] = None
         self.jinja: Optional[jinja2.Template] = None
+        self.log = logging.getLogger('handler')
+        self.log.setLevel(logging.DEBUG)
 
         if "jq_query" in topic_cfg:
             self.jq = pyjq.compile(topic_cfg["jq_query"])
@@ -55,18 +57,20 @@ class TopicHandler:
                     if not handler:
                         raise ValueError(f'Handler "{handler_name}" does not exist')
 
-                    await handler(handler_cfg=cfg, templates_cfg=self.templates_cfg, mqtt=client, topic=topic,
+                    await handler(handler_cfg=cfg, templates_cfg=self.templates_cfg, logger=self.log, mqtt=client,
+                                  topic=topic,
                                   payload=payload, qos=qos, properties=properties,
                                   value=value)
                 except Exception:
-                    logging.warning(f"Error executing handler '{handler_name}':", exc_info=sys.exc_info())
+                    self.log.warning(f"Error executing handler '{handler_name}':", exc_info=sys.exc_info())
 
 
-async def handle_request(handler_cfg: dict, *a, **kw):
+async def handle_request(handler_cfg: dict, logger: logging.Logger, *a, **kw):
     method = handler_cfg.get('method', 'GET')
     url = handler_cfg['url']
     data = handler_cfg.get('post_data', None)
     headers = handler_cfg.get('headers', None)
+    log_response = handler_cfg.get('log_response', False)
     timeout = aiohttp.ClientTimeout(total=handler_cfg.get('timeout', 60))
 
     method = Template(method).render(**kw)
@@ -80,14 +84,20 @@ async def handle_request(handler_cfg: dict, *a, **kw):
 
     url = Template(url).render(**kw)
 
+    logger.debug(f"-> request: {method} {url}")
+
     async with aiohttp.ClientSession(timeout=timeout) as session:
         try:
-            await session.request(method, url, data=data, headers=headers)
+            response = await session.request(method, url, data=data, headers=headers)
+
+            if log_response:
+                logger.info(f"   response: {await response.text()}")
+
         except Exception:
             raise RuntimeError(f"Error while performing {method} request to '{url}'")
 
 
-async def handle_command(handler_cfg: dict, *a, **kw):
+async def handle_command(handler_cfg: dict, logger: logging.Logger, *a, **kw):
     shell = handler_cfg.get('shell', False)
     args = handler_cfg['args']
     stdin = handler_cfg.get('stdin', None)
@@ -107,12 +117,15 @@ async def handle_command(handler_cfg: dict, *a, **kw):
         formatted_args = map(lambda i: Template(i).render(**kw), args)
         process_creator = partial(asyncio.create_subprocess_exec, *formatted_args)
 
+    logger.debug(
+        f"-> command: (shell: {shell}) {formatted_args if type(formatted_args) == str else ' '.join(formatted_args)}")
+
     p = await process_creator(stdin=asyncio.subprocess.PIPE if stdin else None)
 
     await asyncio.wait_for(p.communicate(stdin), timeout)
 
 
-async def handle_template(handler_cfg: dict, templates_cfg: dict, *a, **kw):
+async def handle_template(handler_cfg: dict, templates_cfg: dict, logger: logging.Logger, *a, **kw):
     tpl_name = handler_cfg["name"]
 
     if tpl_name not in templates_cfg:

@@ -24,6 +24,7 @@ topics:
               #post_data: '' # template string, default none (do not send an HTTP payload)
               #headers: {}   # replace headers, parsed as template strings
               #timeout: 60   # default 60 seconds for request
+              #log_response: false  # whether the response should be logged, default false
 
           - command:
               shell: false   # default false
